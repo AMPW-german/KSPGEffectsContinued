@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net481</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>KSPGEffectsContinued</RootNamespace>
+    <AssemblyName>KSPGEffectsContinued</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_GEffectsLogicSiblingPath>$(MSBuildProjectDirectory)/../../GEffectsLogic/GEffectsLogic/bin/Debug/net481/GEffectsLogic.dll</_GEffectsLogicSiblingPath>
+    <_GEffectsLogicFallbackPath>$(MSBuildProjectDirectory/GEffectsLogic.dll</_GEffectsLogicFallbackPath>
+    <GEffectsLogicHintPath Condition="'$(GEffectsLogicHintPath)' == '' And Exists('$(_GEffectsLogicSiblingPath)')">$(_GEffectsLogicSiblingPath)</GEffectsLogicHintPath>
+    <GEffectsLogicHintPath Condition="'$(GEffectsLogicHintPath)' == ''">$(_GEffectsLogicFallbackPath)</GEffectsLogicHintPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="GEffectsLogic">
+      <HintPath>$(GEffectsLogicHintPath)</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JsonPoke" Version="1.2.0" />
+    <PackageReference Include="KSPBuildTools" Version="1.1.1" />
+  </ItemGroup>
+
+</Project>
