@@ -27,4 +27,20 @@
     <PackageReference Include="KSPBuildTools" Version="1.1.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Visuals\Shader\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Visuals\Shader\GEffectsShader-linux.unity3d">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Visuals\Shader\GEffectsShader-macosx.unity3d">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Visuals\Shader\GEffectsShader-windows.unity3d">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using KSPGEffectsContinued.Logging;
+using KSPGEffectsContinued.Visuals;
 using UnityEngine;
 using VehiclePhysics;
 using Logger = GEffectsLogic.Logging.Logger;
@@ -17,6 +18,7 @@ namespace KSPGEffectsContinued
         const string APP_NAME = "GEffectsContinued";
         const string CONTROL_LOCK_ID = "GEffectsContinuedLock";
         public const double G_CONST = 9.81;
+        public static float vignetteShape = 2.0f; // 1.0 is circular, higher streches it into an oval
 
         //Specialization priority to be a commander
         Dictionary<string, int> priorities = new Dictionary<string, int>() {
@@ -24,6 +26,8 @@ namespace KSPGEffectsContinued
         };
 
         bool paused = false;
+
+        KSPGEffectsShader shaderInstance;
 
         protected void Start()
         {
@@ -34,6 +38,8 @@ namespace KSPGEffectsContinued
             //GameEvents.onCrewKilled.Add(onCrewKilled);
 
             ProtoCrewMember.doStockGCalcs = false;
+
+            shaderInstance = new KSPGEffectsShader();
         }
 
         protected void Awake()
@@ -74,6 +80,11 @@ namespace KSPGEffectsContinued
         }
 
 
+        void OnGUI()
+        {
+            shaderInstance.Draw();
+        }
+
         public void FixedUpdate()
         {
             if (paused)
@@ -84,25 +95,53 @@ namespace KSPGEffectsContinued
             double deltaTime = TimeWarp.fixedDeltaTime;
 
             Vessel activeVessel = FlightGlobals.ActiveVessel;
-            List<Vessel> allVessels = FlightGlobals.Vessels.Where(v => v.vesselType != VesselType.SpaceObject).ToList();
 
+            List<Vessel> allVessels = [.. FlightGlobals.Vessels.Where(v => v.vesselType != VesselType.SpaceObject && v != activeVessel)];
             allVessels.ForEach(v =>
             {
                 //Calculate G forces
                 Vector3d gAcceleration = FlightGlobals.getGeeForceAtPosition(v.GetWorldPos3D()) - v.acceleration;
                 Vector3d cabinAcceleration = v.transform.InverseTransformDirection(gAcceleration); //vessel.transform is an active part's transform
-                cabinAcceleration /= -G_CONST;
-                
-                GEffectsModLogging.LogStr($"Vessel: {v.id}; Gx: {cabinAcceleration.x}; Gy: {cabinAcceleration.y}; Gz: {cabinAcceleration.z}", Logger.LogLevel.Debug);
+                cabinAcceleration /= G_CONST; // Convert to Gs
+                float accelerationLength = (float)cabinAcceleration.magnitude;
+                //cabinAcceleration.z = -cabinAcceleration.z; // Invert z to match GLogic's coordinate system
 
-                double bestVisibility = -1.0; // Smallest (best) visibility from all vessel crew to provide vision as long as possible
-                
+                GEffectsModLogging.LogStr($"Vessel: {v.id}; Magnitude: {accelerationLength}; Gx: {cabinAcceleration.x}; Gy: {cabinAcceleration.y}; Gz: {cabinAcceleration.z}", Logger.LogLevel.Debug);
+
                 v.GetVesselCrew().ForEach(pcm =>
                 {
                     KSPGEffectsLogicInstance instance = KSPGEffectsLogicInstance.GetLogicInstance(pcm.name);
-                    instance.Update(deltaTime, cabinAcceleration.x, cabinAcceleration.y, cabinAcceleration.z);
+                    instance.Update(deltaTime, 0, 0, accelerationLength);
                 });
             });
+
+            //Calculate G forces
+            Vector3d gAcceleration = FlightGlobals.getGeeForceAtPosition(activeVessel.GetWorldPos3D()) - activeVessel.acceleration;
+            Vector3d cabinAcceleration = activeVessel.transform.InverseTransformDirection(gAcceleration); //vessel.transform is an active part's transform
+            cabinAcceleration /= G_CONST; // Convert to Gs
+            float accelerationLength = (float)cabinAcceleration.magnitude;
+            //cabinAcceleration.z = cabinAcceleration.z; // Invert z to match GLogic's coordinate system
+
+            GEffectsModLogging.LogStr($"Vessel: {activeVessel.id}; Magnitude: {accelerationLength}; Gx: {cabinAcceleration.x}; Gy: {cabinAcceleration.y}; Gz: {cabinAcceleration.z}", Logger.LogLevel.Debug);
+
+            double bestConsciousness = -1.0; // Smallest (best) consciousness from all vessel crew to provide consciousness as long as possible
+            double tunnelVision = 0.0;
+            double greyScale = 0.0;
+
+            activeVessel.GetVesselCrew().ForEach(pcm =>
+            {
+                KSPGEffectsLogicInstance instance = KSPGEffectsLogicInstance.GetLogicInstance(pcm.name);
+                instance.Update(deltaTime, 0, 0, accelerationLength);
+
+                if (instance.ConsciousnessLevel > bestConsciousness)
+                {
+                    bestConsciousness = instance.ConsciousnessLevel;
+                    tunnelVision = instance.TunnelVisionLevel;
+                    greyScale = instance.GreyScaleLevel;
+                }
+            });
+
+            shaderInstance.Update((float) greyScale, (float) tunnelVision);
         }
     }
 }
