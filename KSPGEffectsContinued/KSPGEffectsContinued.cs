@@ -38,14 +38,14 @@ namespace KSPGEffectsContinued
             //GameEvents.onCrewKilled.Add(onCrewKilled);
 
             ProtoCrewMember.doStockGCalcs = false;
-
-            shaderInstance = new KSPGEffectsShader();
         }
 
         protected void Awake()
         {
             KSPGEffectsLogicInstance.ClearInstances();
             new GEffectsLogicLogging();
+
+            shaderInstance = KSPGEffectsShader.initializeCameraFilter(FlightCamera.fetch.mainCamera);
         }
 
         protected void OnDestroy()
@@ -82,7 +82,6 @@ namespace KSPGEffectsContinued
 
         void OnGUI()
         {
-            shaderInstance.Draw();
         }
 
         public void FixedUpdate()
@@ -141,7 +140,7 @@ namespace KSPGEffectsContinued
                 }
             });
 
-            shaderInstance.Update((float) greyScale, (float) tunnelVision);
+            shaderInstance.UpdateLevels((float) greyScale, (float) tunnelVision);
         }
     }
 }

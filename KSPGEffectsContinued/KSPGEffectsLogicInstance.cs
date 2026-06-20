@@ -17,7 +17,7 @@ namespace KSPGEffectsContinued
         public static KSPGEffectsLogicInstance GetLogicInstance(string vehicleId) => KSPInstances.FirstOrDefault(kvp => kvp.Key == vehicleId).Value ?? new KSPGEffectsLogicInstance(vehicleId);
         
         public string VehicleId { get; private set; }
-        public bool Enabled { get; set; }
+        public bool Enabled { get; set; } = true;
 
         public override void Update(double deltaTime, double currentGx, double currentGy, double currentGz)
         {

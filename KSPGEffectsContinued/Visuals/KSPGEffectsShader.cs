@@ -5,38 +5,45 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static KSP.UI.Screens.RDArchivesController;
 
 namespace KSPGEffectsContinued.Visuals
 {
-    internal class KSPGEffectsShader
+    internal class KSPGEffectsShader : MonoBehaviour
     {
-        private AssetBundle assetBundle;
-        private Shader shader;
-        private Material material;
-        private RenderTexture renderTexture;
-        private RenderTexture uiRenderTexture;
-        private Camera uiCamera;
-        Vector2Int screenSize;
+        private static AssetBundle assetBundle;
+        private static Shader shader;
+        private static Material material;
+        private static Vector2Int screenSize;
 
-        internal void Update(float GreyScaleLevel, float TunnelVisionLevel)
+        internal void UpdateLevels(float GreyScaleLevel, float TunnelVisionLevel)
         {
             material.SetFloat("_GrayScaleLevel", GreyScaleLevel);
             material.SetFloat("_TunnelVisionLevel", TunnelVisionLevel);
-            // Ensure the UI camera renders into the uiRenderTexture immediately
-            // so we can use it as the source for the post-process material.
-            uiCamera.Render();
+            //// Ensure the UI camera renders into the uiRenderTexture immediately
+            //// so we can use it as the source for the post-process material.
+            //uiCamera.Render();
 
-            // Blit from the UI render target through the effect material into the final renderTexture.
-            // Graphics.Blit(source, dest, material) automatically sets _MainTex = source for the shader.
-            Graphics.Blit(uiRenderTexture, renderTexture, material);
+            //// Blit from the UI render target through the effect material into the final renderTexture.
+            //// Graphics.Blit(source, dest, material) automatically sets _MainTex = source for the shader.
+            //Graphics.Blit(uiRenderTexture, renderTexture, material);
         }
 
-        internal void Draw()
+        //internal void Draw()
+        //{
+        //    GUI.DrawTexture(new Rect(0, 0, screenSize.x, screenSize.y), renderTexture, ScaleMode.ScaleAndCrop, true);
+        //}
+
+        void OnRenderImage(RenderTexture source, RenderTexture dest)
         {
-            GUI.DrawTexture(new Rect(0, 0, screenSize.x, screenSize.y), renderTexture, ScaleMode.ScaleAndCrop, true);
+            if ((material != null))
+            {
+                //material.SetFloat("_Magnitude", magnitude);
+                Graphics.Blit(source, dest, material);
+            }
         }
 
-        internal KSPGEffectsShader()
+        private static void LoadMaterial()
         {
             string filePath = $"{KSPUtil.ApplicationRootPath}GameData/KSPGEffectsContinued/Visuals/Shader/GEffectsShader";
             if (Application.platform == RuntimePlatform.LinuxPlayer || (Application.platform == RuntimePlatform.WindowsPlayer && SystemInfo.graphicsDeviceVersion.StartsWith("OpenGL")))
@@ -55,9 +62,6 @@ namespace KSPGEffectsContinued.Visuals
             assetBundle = AssetBundle.LoadFromFile(filePath);
 
             screenSize = new Vector2Int(GameSettings.SCREEN_RESOLUTION_WIDTH, GameSettings.SCREEN_RESOLUTION_HEIGHT);
-
-            renderTexture = new RenderTexture(screenSize.x, screenSize.y, 32);
-            uiRenderTexture = new RenderTexture(screenSize.x, screenSize.y, 32);
 
             Shader[] shaders = assetBundle.LoadAllAssets<Shader>();
 
@@ -80,26 +84,35 @@ namespace KSPGEffectsContinued.Visuals
             material.SetFloat("_GrayScaleLevel", 0.0f);
             material.SetFloat("_TunnelVisionLevel", 0.0f);
             material.SetFloat("_ScreenSizeAdjustment", KSPGEffectsContinued.vignetteShape * screenSize.y / screenSize.x);
+        }
 
-            GameObject camObj = new GameObject("GEffectsVisuals");
-            uiCamera = camObj.AddComponent<Camera>();
-            uiCamera.orthographic = true;
-            uiCamera.clearFlags = CameraClearFlags.Nothing;
-            uiCamera.backgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
+        public static KSPGEffectsShader initializeCameraFilter(Camera camera)
+        {
+            if (material == null) LoadMaterial();
 
-            uiCamera.cullingMask = LayerMask.GetMask("UI");
-            // Render UI into a separate render target, then post-process into `renderTexture`.
-            uiCamera.targetTexture = uiRenderTexture;
+            KSPGEffectsShader filter;
 
-            // Create Canvas
-            GameObject canvasObj = new GameObject("GEffectsCanvas");
-            Canvas canvas = canvasObj.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            canvas.worldCamera = uiCamera; // Assign the camera to the canvas
-            canvasObj.layer = LayerMask.NameToLayer("UI"); // Use the "UI" layer
+            Camera[] flightCameras = FlightCamera.fetch.cameras;
 
-            RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-            canvasRect.sizeDelta = new Vector2(screenSize.x, screenSize.y); // Match render texture size
+            // Attach the post-process component to all cameras so the effect can run
+            // for both world and UI cameras. Previously we excluded flight cameras
+            // which prevented the post-process from being applied consistently over
+            // the final composited frame.
+            foreach (Camera item in Camera.allCameras)
+            {
+                filter = item.gameObject.GetComponent<KSPGEffectsShader>();
+                if (filter == null)
+                {
+                    filter = item.gameObject.AddComponent<KSPGEffectsShader>();
+                }
+            }
+
+            filter = camera.gameObject.GetComponent<KSPGEffectsShader>();
+            if (filter == null)
+            {
+                filter = camera.gameObject.AddComponent<KSPGEffectsShader>();
+            }
+            return filter;
         }
     }
 }
