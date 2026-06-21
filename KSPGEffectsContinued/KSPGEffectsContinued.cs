@@ -20,14 +20,9 @@ namespace KSPGEffectsContinued
         public const double G_CONST = 9.81;
         public static float vignetteShape = 2.0f; // 1.0 is circular, higher streches it into an oval
 
-        //Specialization priority to be a commander
-        Dictionary<string, int> priorities = new Dictionary<string, int>() {
-            {"pilot", 3}, {"engineer", 2}, {"scientist", 2}, {"tourist", 0}
-        };
-
         bool paused = false;
 
-        KSPGEffectsShader shaderInstance;
+        KSPGEffectsVisual shaderInstance;
 
         protected void Start()
         {
@@ -45,7 +40,7 @@ namespace KSPGEffectsContinued
             KSPGEffectsLogicInstance.ClearInstances();
             new GEffectsLogicLogging();
 
-            shaderInstance = KSPGEffectsShader.initializeCameraFilter(FlightCamera.fetch.mainCamera);
+            KSPGEffectsVisual.initializeCameraFilter();
         }
 
         protected void OnDestroy()
@@ -82,7 +77,11 @@ namespace KSPGEffectsContinued
 
         void OnGUI()
         {
+            KSPGEffectsVisual.drawGEffects(greyScale, tunnelVision);
         }
+
+        float greyScale = 0.0f;
+        float tunnelVision = 0.0f;
 
         public void FixedUpdate()
         {
@@ -124,8 +123,8 @@ namespace KSPGEffectsContinued
             GEffectsModLogging.LogStr($"Vessel: {activeVessel.id}; Magnitude: {accelerationLength}; Gx: {cabinAcceleration.x}; Gy: {cabinAcceleration.y}; Gz: {cabinAcceleration.z}", Logger.LogLevel.Debug);
 
             double bestConsciousness = -1.0; // Smallest (best) consciousness from all vessel crew to provide consciousness as long as possible
-            double tunnelVision = 0.0;
-            double greyScale = 0.0;
+            tunnelVision = 0.0f;
+            greyScale = 0.0f;
 
             activeVessel.GetVesselCrew().ForEach(pcm =>
             {
@@ -135,12 +134,10 @@ namespace KSPGEffectsContinued
                 if (instance.ConsciousnessLevel > bestConsciousness)
                 {
                     bestConsciousness = instance.ConsciousnessLevel;
-                    tunnelVision = instance.TunnelVisionLevel;
-                    greyScale = instance.GreyScaleLevel;
+                    tunnelVision = (float)instance.TunnelVisionLevel;
+                    greyScale = (float)instance.GreyScaleLevel;
                 }
             });
-
-            shaderInstance.UpdateLevels((float) greyScale, (float) tunnelVision);
         }
     }
 }
