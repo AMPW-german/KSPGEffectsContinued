@@ -15,22 +15,18 @@ namespace KSPGEffectsContinued
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class KSPGEffectsContinued : MonoBehaviour
     {
-        const string APP_NAME = "GEffectsContinued";
-        const string CONTROL_LOCK_ID = "GEffectsContinuedLock";
+        internal const string APP_NAME = "GEffectsContinued";
+        internal const string CONTROL_LOCK_ID = "GEffectsContinuedLock";
         public const double G_CONST = 9.81;
-        public static float vignetteShape = 2.0f; // 1.0 is circular, higher streches it into an oval
 
         bool paused = false;
 
-        KSPGEffectsVisual shaderInstance;
+        // KSPGEffectsVisual shaderInstance;
 
         protected void Start()
         {
-            GameEvents.onGamePause.Add(onPause);
-            GameEvents.onGameUnpause.Add(onUnPause);
-            GameEvents.onCrash.Add(onCrewKilled);
-            GameEvents.onCrashSplashdown.Add(onCrewKilled);
-            //GameEvents.onCrewKilled.Add(onCrewKilled);
+            GameEvents.onGamePause.Add(OnPause);
+            GameEvents.onGameUnpause.Add(OnUnPause);
 
             ProtoCrewMember.doStockGCalcs = false;
         }
@@ -45,14 +41,11 @@ namespace KSPGEffectsContinued
 
         protected void OnDestroy()
         {
-            GameEvents.onGamePause.Remove(onPause);
-            GameEvents.onGameUnpause.Remove(onUnPause);
-            GameEvents.onCrash.Remove(onCrewKilled);
-            GameEvents.onCrashSplashdown.Remove(onCrewKilled);
-            //GameEvents.onCrewKilled.Remove(onCrewKilled);
+            GameEvents.onGamePause.Remove(OnPause);
+            GameEvents.onGameUnpause.Remove(OnUnPause);
         }
 
-        private void applyControlLock()
+        private void ApplyControlLock()
         {
             if (InputLockManager.GetControlLock(CONTROL_LOCK_ID) != ControlTypes.None)
             {
@@ -60,24 +53,30 @@ namespace KSPGEffectsContinued
             }
         }
 
-        void onPause()
+        private void OnPause()
         {
             paused = true;
         }
 
-        void onUnPause()
+        private void OnUnPause()
         {
             paused = false;
         }
 
-        void onCrewKilled(EventReport eventReport)
+        private void PassValuesToStock(ProtoCrewMember pcm, double consciousnessLevel)
         {
+            GameParameters.AdvancedParams pars = HighLogic.CurrentGame.Parameters.CustomParams<GameParameters.AdvancedParams>();
+            pcm.gExperienced =
+                consciousnessLevel * PhysicsGlobals.KerbalGThresholdLOC * pars.KerbalGToleranceMult * ProtoCrewMember.GToleranceMult(pcm);
+            
+            if (consciousnessLevel < 0.05) pcm.SetInactive(60000, false);
+            else pcm.SetInactive(0.0, false);
         }
-
-
+        
         void OnGUI()
         {
-            KSPGEffectsVisual.drawGEffects(greyScale, tunnelVision);
+            if (paused) KSPGEffectsVisual.drawGEffects(0.0f, 0.0f);
+            else KSPGEffectsVisual.drawGEffects(greyScale, tunnelVision);
         }
 
         float greyScale = 0.0f;
@@ -85,6 +84,8 @@ namespace KSPGEffectsContinued
 
         public void FixedUpdate()
         {
+            ApplyControlLock();
+            
             if (paused)
             {
                 return;
@@ -118,7 +119,6 @@ namespace KSPGEffectsContinued
             Vector3d cabinAcceleration = activeVessel.transform.InverseTransformDirection(gAcceleration); //vessel.transform is an active part's transform
             cabinAcceleration /= G_CONST; // Convert to Gs
             float accelerationLength = (float)cabinAcceleration.magnitude;
-            //cabinAcceleration.z = cabinAcceleration.z; // Invert z to match GLogic's coordinate system
 
             GEffectsModLogging.LogStr($"Vessel: {activeVessel.id}; Magnitude: {accelerationLength}; Gx: {cabinAcceleration.x}; Gy: {cabinAcceleration.y}; Gz: {cabinAcceleration.z}", Logger.LogLevel.Debug);
 
@@ -137,7 +137,13 @@ namespace KSPGEffectsContinued
                     tunnelVision = (float)instance.TunnelVisionLevel;
                     greyScale = (float)instance.GreyScaleLevel;
                 }
+
+                PassValuesToStock(pcm, instance.ConsciousnessLevel);
             });
+
+            if (bestConsciousness > 0 && bestConsciousness < 0.05) InputLockManager.SetControlLock(ControlTypes.ALL_SHIP_CONTROLS, CONTROL_LOCK_ID);
+            else InputLockManager.RemoveControlLock(CONTROL_LOCK_ID);
+            
         }
     }
 }

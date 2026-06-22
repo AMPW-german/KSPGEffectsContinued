@@ -5,7 +5,7 @@ namespace KSPGEffectsContinued.Logging
 {
     public class GEffectsLogicLogging : GEffectsLogic.Logging.Logger
     {
-        private const string LogPrefix = "GEffectsContinued [GEffectsLogicInstance] ";
+        private const string LogPrefix = KSPGEffectsContinued.APP_NAME + " [GEffectsLogicInstance]";
 
         public override bool LogStr(string message, int id, LogLevel level = LogLevel.Debug)
         {
@@ -15,20 +15,20 @@ namespace KSPGEffectsContinued.Logging
             {
                 case LogLevel.Debug:
                     if (GEffectsLogic.LogicSettings.DebugMode)
-                        Debug.Log($"{LogPrefix}Debug ({name}): {message}");
+                        Debug.Log($"{LogPrefix} Debug ({name}): {message}");
                     break;
                 case LogLevel.Info:
                     if (!GEffectsLogic.LogicSettings.SuppresInfoLogs)
-                        Debug.Log($"{LogPrefix}Info ({name}): {message}");
+                        Debug.Log($"{LogPrefix} Info ({name}): {message}");
                     break;
                 case LogLevel.Warning:
-                    Debug.LogWarning($"{LogPrefix}Warning ({name}): {message}");
+                    Debug.LogWarning($"{LogPrefix} Warning ({name}): {message}");
                     break;
                 case LogLevel.Error:
-                    Debug.LogError($"{LogPrefix}Error ({name}): {message}");
+                    Debug.LogError($"{LogPrefix} Error ({name}): {message}");
                     break;
                 default:
-                    Debug.Log($"{LogPrefix}Unknown LogLevel ({name}): {message}");
+                    Debug.Log($"{LogPrefix} Unknown LogLevel ({name}): {message}");
                     break;
             }
             return true;

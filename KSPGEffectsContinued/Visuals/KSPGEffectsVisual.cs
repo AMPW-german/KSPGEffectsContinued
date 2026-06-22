@@ -20,10 +20,10 @@ namespace KSPGEffectsContinued.Visuals
 
         static Texture2D blackoutTexture = null;
         static Texture2D intensifier = new Texture2D(1, 1);
-        static Texture2D gLocOverlay = new Texture2D(1, 1);
+        // static Texture2D gLocOverlay = new Texture2D(1, 1);
         static Color visualsColor = new Color();
         static Color intensifierColor = new Color();
-        static Color gLocColor = new Color();
+        // static Color gLocColor = new Color();
 
         internal static void drawGEffects(float GreyScaleLevel, float TunnelVisionLevel)
         {
