@@ -21,8 +21,6 @@ namespace KSPGEffectsContinued
 
         bool paused = false;
 
-        // KSPGEffectsVisual shaderInstance;
-
         protected void Start()
         {
             GameEvents.onGamePause.Add(OnPause);
@@ -75,8 +73,8 @@ namespace KSPGEffectsContinued
         
         void OnGUI()
         {
-            if (paused) KSPGEffectsVisual.drawGEffects(0.0f, 0.0f);
-            else KSPGEffectsVisual.drawGEffects(greyScale, tunnelVision);
+            if (paused) KSPGEffectsVisual.drawGEffects(0.0f);
+            else KSPGEffectsVisual.drawGEffects(tunnelVision);
         }
 
         float greyScale = 0.0f;
